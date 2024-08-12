@@ -1,0 +1,3 @@
+KAFKA_USERNAME=aqkjtrhb
+KAFKA_PASS=JSY-cpUfbH6qH5pt2DxbFriMo-tTgygV
+KAFKA_GROUP_ID=aqkjtrhb-foo
