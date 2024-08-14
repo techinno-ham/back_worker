@@ -1,5 +1,9 @@
+#https://medium.com/@albertazzir/blazing-fast-python-docker-builds-with-poetry-a78a66f5aed0
+
+
+
 # Use an official Python runtime as a parent image
-FROM python:3.11
+FROM python:3.11-buster
 
 RUN pip install poetry
 
