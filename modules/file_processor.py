@@ -1,7 +1,7 @@
 import asyncio
 import os
 import logging
-from langchain_community.document_loaders import UnstructuredPDFLoader
+# from langchain_community.document_loaders import UnstructuredPDFLoader
 
 # https://medium.com/@varsha.rainer/document-loaders-in-langchain-7c2db9851123
 
@@ -10,6 +10,11 @@ from utils import recursive_char_splitter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+#https://blog.min.io/langchain-openai-s3-loader/
+# loader = S3DirectoryLoader(
+#     "testing-hwc", aws_access_key_id="xxxx", aws_secret_access_key="yyyy"
+# )
 
 
 async def load_documents(file_type):

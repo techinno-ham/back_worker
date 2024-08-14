@@ -1,11 +1,11 @@
 from dotenv import load_dotenv
-import requests
-from bs4 import BeautifulSoup
+# import requests
+# from bs4 import BeautifulSoup
 from confluent_kafka import Consumer
 from db import database_instance
-import socket
+# import socket
 import json
-from utils import recursive_char_splitter
+# from utils import recursive_char_splitter
 from embed import create_document_embedding
 import asyncio
 import os
