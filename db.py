@@ -1,14 +1,18 @@
 import psycopg2
 import json
 import uuid
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Define database connection parameters
 db_params = {
-    "dbname": "ai",
-    "user": "postgres",
-    "password": "w2CF93g9Ty",
-    "host": "stream.plotset.com",
-    "port": "5432"
+    "dbname": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASS"),
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
 }
 
 
