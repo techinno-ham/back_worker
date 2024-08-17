@@ -9,6 +9,17 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    env:
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      KAFKA_USERNAME: ${{ secrets.KAFKA_USERNAME }}
+      KAFKA_PASS: ${{ secrets.KAFKA_PASS }}
+      KAFKA_GROUP_ID: ${{ secrets.KAFKA_GROUP_ID }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -36,6 +47,16 @@ jobs:
         #   hamyarchat/front:${{ env.TAG }}
         #   hamyarchat/front:latest
         tags: hamyarchat/worker:latest
+        build-args: |
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          DB_PASS=${{ secrets.DB_PASS }}
+          KAFKA_USERNAME=${{ secrets.KAFKA_USERNAME }}
+          KAFKA_PASS=${{ secrets.KAFKA_PASS }}
+          KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 
     - name: Log out from Docker Hub
       run: docker logout
