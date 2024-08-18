@@ -15,7 +15,7 @@ from modules.file_processor import handle_files_datasource
 from modules.link_processor import handle_urls_datasource
 from modules.text_processor import handle_text_datasource
 
-load_dotenv()
+load_dotenv(override=True)
 
 consumer_conf = {'bootstrap.servers': 'dory.srvs.cloudkafka.com:9094',
                  'security.protocol': 'SASL_SSL',

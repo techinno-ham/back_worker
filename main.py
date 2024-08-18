@@ -18,15 +18,15 @@ from modules.text_processor import handle_text_datasource
 import time
 from confluent_kafka import Consumer, KafkaException
 
-load_dotenv()
+load_dotenv(override=True)
 
-consumer_conf = {'bootstrap.servers': 'dory.srvs.cloudkafka.com:9094',
+consumer_conf = {'bootstrap.servers': os.getenv("KAFKA_SERVER"),
                  'security.protocol': 'SASL_SSL',
-                 'sasl.mechanism': 'SCRAM-SHA-512',
+                 'sasl.mechanism': os.getenv('KAFKA_SASL_MECH'),
                  'sasl.username': os.getenv("KAFKA_USERNAME"),
                  'sasl.password': os.getenv("KAFKA_PASS"),
                  'group.id': os.getenv("KAFKA_GROUP_ID"),
-                 'auto.offset.reset': 'smallest'}
+                 'auto.offset.reset': os.getenv("KAFKA_OFFSET_RESET")}
 
 
 async def aggregate_results(datasources):
@@ -123,6 +123,6 @@ if __name__ == "__main__":
 
     consumer = create_kafka_consumer(consumer_conf)
 
-    consume_jobs(consumer, 'aqkjtrhb-default')
+    consume_jobs(consumer, os.getenv("KAFKA_TOPIC"))
 
     consumer.close()

@@ -2,7 +2,7 @@ from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(override=True)
 
 embeddings_model = OpenAIEmbeddings()
 
