@@ -15,6 +15,9 @@ from modules.file_processor import handle_files_datasource
 from modules.link_processor import handle_urls_datasource
 from modules.text_processor import handle_text_datasource
 
+import time
+from confluent_kafka import Consumer, KafkaException
+
 load_dotenv()
 
 consumer_conf = {'bootstrap.servers': 'dory.srvs.cloudkafka.com:9094',
@@ -73,20 +76,38 @@ async def handle_incoming_job_events(job):
                                                    )
 
 
+def create_kafka_consumer(config):
+    """Creates a Kafka consumer with retry logic until successful."""
+    consumer = None
+    while not consumer:
+        try:
+            consumer = Consumer(config)
+            print("Kafka consumer connection successful")
+        except KafkaException as e:
+            print(f"Kafka consumer connection failed: {e}")
+            print("Retrying in 5 seconds...")
+            time.sleep(5)
+    
+    return consumer
+
+
+
 def consume_jobs(consumer, topic):
     consumer.subscribe([topic])
 
     print("Connected to topic:", topic)
 
     while True:
-        msg = consumer.poll(0.3)
+        msg = consumer.poll(2)
 
         if msg is None:
+            print("Pulled Message:",msg)
             continue
         if msg.error():
             print("Consumer error: {}".format(msg.error()))
             continue
         try:
+            print("Job revieved:",msg)
             # Run the async function in a new event loop
             asyncio.run(handle_incoming_job_events(msg))
             print("Successfully handled message")
@@ -95,9 +116,12 @@ def consume_jobs(consumer, topic):
 
 
 if __name__ == "__main__":
+    
+    print("Worker service started !")
+    
     database_instance.connect()
 
-    consumer = Consumer(consumer_conf)
+    consumer = create_kafka_consumer(consumer_conf)
 
     consume_jobs(consumer, 'aqkjtrhb-default')
 
