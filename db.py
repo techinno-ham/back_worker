@@ -3,6 +3,8 @@ import json
 import uuid
 import os
 from dotenv import load_dotenv
+import time
+from psycopg2 import OperationalError
 
 load_dotenv()
 
@@ -19,11 +21,19 @@ db_params = {
 class Database:
     def __init__(self):
         self.connection = None
+        self.db_params = db_params
 
     def connect(self):
-        """Establishes a connection to the database."""
-        print("Database connection initialized !")
-        self.connection = psycopg2.connect(**db_params)
+        """Establishes a connection to the database, retrying until successful."""
+        while not self.connection:
+            try:
+                self.connection = psycopg2.connect(**self.db_params)
+                print("Database connection successful")
+            except OperationalError as e:
+                print(f"Database connection failed: {e}")
+                print("Retrying in 5 seconds...")
+                time.sleep(5)
+
 
     def disconnect(self):
         """Closes the connection to the database."""
