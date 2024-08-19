@@ -15,9 +15,13 @@ jobs:
       DB_USER: ${{ secrets.DB_USER }}
       DB_PORT: ${{ secrets.DB_PORT }}
       DB_PASS: ${{ secrets.DB_PASS }}
+      KAFKA_SERVER: ${{ secrets.KAFKA_SERVER }}
+      KAFKA_TOPIC: ${{ secrets.KAFKA_TOPIC }}
       KAFKA_USERNAME: ${{ secrets.KAFKA_USERNAME }}
       KAFKA_PASS: ${{ secrets.KAFKA_PASS }}
       KAFKA_GROUP_ID: ${{ secrets.KAFKA_GROUP_ID }}
+      KAFKA_SASL_MECH: ${{ secrets.KAFKA_SASL_MECH }}
+      KAFKA_OFFSET_RESET: ${{ secrets.KAFKA_OFFSET_RESET }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
@@ -53,9 +57,13 @@ jobs:
           DB_USER=${{ secrets.DB_USER }}
           DB_PORT=${{ secrets.DB_PORT }}
           DB_PASS=${{ secrets.DB_PASS }}
+          KAFKA_SERVER=${{ secrets.KAFKA_SERVER }}
+          KAFKA_TOPIC=${{ secrets.KAFKA_TOPIC }}
           KAFKA_USERNAME=${{ secrets.KAFKA_USERNAME }}
           KAFKA_PASS=${{ secrets.KAFKA_PASS }}
           KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
+          KAFKA_SASL_MECH=${{ secrets.KAFKA_SASL_MECH }}
+          KAFKA_OFFSET_RESET=${{ secrets.KAFKA_OFFSET_RESET }}
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 
     - name: Log out from Docker Hub
