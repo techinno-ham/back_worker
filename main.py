@@ -11,7 +11,7 @@ import asyncio
 import os
 
 from modules.qa_processor import handle_qa_datasource
-from modules.file_processor import handle_files_datasource
+from modules.s3_processor import handle_files_from_s3
 from modules.link_processor import handle_urls_datasource
 from modules.text_processor import handle_text_datasource
 
@@ -29,7 +29,7 @@ consumer_conf = {'bootstrap.servers': os.getenv("KAFKA_SERVER"),
                  'auto.offset.reset': os.getenv("KAFKA_OFFSET_RESET")}
 
 
-async def aggregate_results(datasources):
+async def aggregate_results(bot_id,datasources):
     tasks = []
 
     if 'text' in datasources:
@@ -42,7 +42,7 @@ async def aggregate_results(datasources):
         tasks.append(handle_urls_datasource(datasources['urls']))
 
     if 'files' in datasources:
-        tasks.append(handle_files_datasource(datasources['files']))
+        tasks.append(handle_files_from_s3(bot_id))
 
     all_chunks = await asyncio.gather(*tasks)
 
@@ -63,7 +63,7 @@ async def handle_incoming_job_events(job):
     print(f'Received Datasources from Kafka: {datasources}')
 
     # Handle different data sources separately
-    all_chunks = await aggregate_results(datasources)
+    all_chunks = await aggregate_results(bot_id,datasources)
 
     collection_id = database_instance.create_or_return_collection_uuid(bot_id)
 

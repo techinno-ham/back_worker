@@ -16,6 +16,7 @@ langchain-openai = "^0.0.8"
 python-dotenv = "^1.0.1"
 unstructured = { version = "^0.14.7",extras = ["docx", "pptx" , "md" , "txt" , "doc"] }
 boto3 = "^1.35.0"
+pypdf2 = "^3.0.1"
 
 
 [build-system]
