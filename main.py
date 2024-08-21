@@ -1,15 +1,12 @@
 from dotenv import load_dotenv
-# import requests
-# from bs4 import BeautifulSoup
+
+import logging
 from confluent_kafka import Consumer
 from db import database_instance
-# import socket
-import json
-# from utils import recursive_char_splitter
 from embed import create_document_embedding
 import asyncio
 import os
-
+import json
 from modules.qa_processor import handle_qa_datasource
 from modules.s3_processor import handle_files_from_s3
 from modules.link_processor import handle_urls_datasource
@@ -17,6 +14,9 @@ from modules.text_processor import handle_text_datasource
 
 import time
 from confluent_kafka import Consumer, KafkaException
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 load_dotenv(override=True)
 
@@ -52,31 +52,14 @@ async def aggregate_results(bot_id,datasources):
 
 
 async def handle_incoming_job_events(job):
-    print("Handle called")
-    # received_msg = job.value()
-    # msg_obj = json.loads(received_msg)
 
-    # datasources = msg_obj['datasources']
-    # bot_id = msg_obj['botId']
+    received_msg = job.value()
+    msg_obj = json.loads(received_msg)
 
-    mock_msg_obj = {
-    "botId": "454b55e8-b84d-4b2e-8a34-646e3cb5d45e",  # This simulates the `botId` in the Kafka message
-    "datasources": {
-        "text": "Sample text input | Sample text input |Sample text input |Sample text input |Sample text input |Sample text input |",   # Simulates data.text_input
-        "qa": [
-            {"question": "What is AI?", "answer": "AI stands for Artificial Intelligence."},
-            {"question": "What is Python?", "answer": "Python is a programming language."},
-        ],
-        "urls": ["https://docs.plotset.com"],  # Simulates data.urls
-        "files": "454b55e8-b84d-4b2e-8a34-646e3cb5d45e"  # Simulates data.static_files
-    }
-}
-
-    datasources = mock_msg_obj['datasources']
-    bot_id = mock_msg_obj['botId']
-
-    print(f'URLs received for Bot: {bot_id}')
-    print(f'Received Datasources from Kafka: {datasources}')
+    datasources = msg_obj['datasources']
+    bot_id = msg_obj['botId']
+    
+    print(f'Received Jon from Kafka for bot : {bot_id}')
 
     # Handle different data sources separately
     all_chunks = await aggregate_results(bot_id,datasources)
@@ -137,7 +120,7 @@ if __name__ == "__main__":
 
     # asyncio.run(handle_incoming_job_events(123))
     
-    print("Worker service started !")
+    logger.info("Worker service started !")
     
     database_instance.connect()
 

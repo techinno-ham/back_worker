@@ -3,6 +3,19 @@ from unittest.mock import patch, AsyncMock, MagicMock
 import asyncio
 from your_module import aggregate_results, handle_incoming_job_events, create_kafka_consumer, consume_jobs
 
+mock_msg_obj = {
+    "botId": "454b55e8-b84d-4b2e-8a34-646e3cb5d45e",  # This simulates the `botId` in the Kafka message
+    "datasources": {
+        "text": "Sample text input | Sample text input |Sample text input |Sample text input |Sample text input |Sample text input |",   # Simulates data.text_input
+        "qa": [
+            {"question": "What is AI?", "answer": "AI stands for Artificial Intelligence."},
+            {"question": "What is Python?", "answer": "Python is a programming language."},
+        ],
+        "urls": ["https://docs.plotset.com"],  # Simulates data.urls
+        "files": "454b55e8-b84d-4b2e-8a34-646e3cb5d45e"  # Simulates data.static_files
+    }
+}
+
 @pytest.mark.asyncio
 @patch('your_module.handle_text_datasource', new_callable=AsyncMock)
 @patch('your_module.handle_qa_datasource', new_callable=AsyncMock)
