@@ -9,5 +9,4 @@ async def handle_qa_datasource(qa):
         doc_content = f"Q: {question}\nA: {answer}"
         document = Document(page_content=doc_content, metadata={"source": "qa"})
         documents.append(document)
-    print(6666 , documents)
     return documents

@@ -72,21 +72,25 @@ def extract_text_from_pdf(file_obj):
         logger.error(f"Error extracting text from PDF: {e}")
         return ""
 
-async def handle_files_from_s3(bucket_name, prefix):
-    """Handle files from S3 and apply chunking."""
+async def handle_files_from_s3(folder_name):
+    """Handle files from S3 and apply chunking. - folder name is equal to data source id"""
+
+    bucket_name = 'data-sources'
+
     try:
         # Define file types to process
         file_types = ['txt', 'doc', 'docx', 'pdf']
         
         # Download files from S3
-        documents = await download_files_from_s3(bucket_name, prefix, file_types)
+        print(777,bucket_name, folder_name,)
+        documents = await download_files_from_s3(bucket_name, folder_name, file_types)
         # Apply chunking logic
         if documents:
             splited_chunks = recursive_char_splitter(documents)
         else:
             splited_chunks = []
         
-        logger.info(f"Processed files from bucket: {bucket_name} {prefix}")
+        logger.info(f"Processed files from bucket: {bucket_name} {folder_name}")
         print(len(splited_chunks))
         return splited_chunks
     
@@ -97,8 +101,9 @@ async def handle_files_from_s3(bucket_name, prefix):
 # Example usage
 async def main():
     bucket_name = 'data-sources'
-    prefix = '9bee920e-59f2-4a32-8ed8-e6881ec6b0f9'
-    chunks = await handle_files_from_s3(bucket_name, prefix)
+    prefix = '454b55e8-b84d-4b2e-8a34-646e3cb5d45e'
+    chunks = await handle_files_from_s3(prefix)
+    print(chunks)
     
 # Run the async main function
 if __name__ == "__main__":

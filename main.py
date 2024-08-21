@@ -42,7 +42,7 @@ async def aggregate_results(bot_id,datasources):
         tasks.append(handle_urls_datasource(datasources['urls']))
 
     if 'files' in datasources:
-        tasks.append(handle_files_from_s3(bot_id))
+        tasks.append(handle_files_from_s3(datasources['files']))
 
     all_chunks = await asyncio.gather(*tasks)
 
@@ -53,11 +53,27 @@ async def aggregate_results(bot_id,datasources):
 
 async def handle_incoming_job_events(job):
     print("Handle called")
-    received_msg = job.value()
-    msg_obj = json.loads(received_msg)
+    # received_msg = job.value()
+    # msg_obj = json.loads(received_msg)
 
-    datasources = msg_obj['datasources']
-    bot_id = msg_obj['botId']
+    # datasources = msg_obj['datasources']
+    # bot_id = msg_obj['botId']
+
+    mock_msg_obj = {
+    "botId": "454b55e8-b84d-4b2e-8a34-646e3cb5d45e",  # This simulates the `botId` in the Kafka message
+    "datasources": {
+        "text": "Sample text input | Sample text input |Sample text input |Sample text input |Sample text input |Sample text input |",   # Simulates data.text_input
+        "qa": [
+            {"question": "What is AI?", "answer": "AI stands for Artificial Intelligence."},
+            {"question": "What is Python?", "answer": "Python is a programming language."},
+        ],
+        "urls": ["https://docs.plotset.com"],  # Simulates data.urls
+        "files": "454b55e8-b84d-4b2e-8a34-646e3cb5d45e"  # Simulates data.static_files
+    }
+}
+
+    datasources = mock_msg_obj['datasources']
+    bot_id = mock_msg_obj['botId']
 
     print(f'URLs received for Bot: {bot_id}')
     print(f'Received Datasources from Kafka: {datasources}')
@@ -116,6 +132,10 @@ def consume_jobs(consumer, topic):
 
 
 if __name__ == "__main__":
+
+    database_instance.connect()
+
+    # asyncio.run(handle_incoming_job_events(123))
     
     print("Worker service started !")
     

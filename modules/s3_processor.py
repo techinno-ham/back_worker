@@ -37,7 +37,7 @@ async def handle_files_from_s3(folder_name):
             splited_chunks = []
         
         logger.info(f"Processed files from bucket: {bucket_name} {folder_name}")
-        print(len(splited_chunks))
+
         return splited_chunks
     
     except Exception as e:
@@ -49,7 +49,7 @@ async def download_files_from_s3(bucket_name, folder_name, file_types):
     documents = []
     
     paginator = s3.get_paginator('list_objects_v2')
-    for page in paginator.paginate(Bucket=bucket_name, folder_name=folder_name):
+    for page in paginator.paginate(Bucket=bucket_name, Prefix=folder_name):
         for obj in page.get('Contents', []):
             file_key = obj['Key']
             if file_key.endswith(tuple(file_types)):

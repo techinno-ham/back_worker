@@ -35,7 +35,7 @@ async def handle_urls_datasource(urls):
 
     all_chunks_flat = [item for sublist in all_chunks if sublist is not None for item in sublist]
 
-    print(f"Processed URLs: {all_chunks_flat}")
+    print(f"Processed URLs: {urls}")
 
     return all_chunks_flat
 
