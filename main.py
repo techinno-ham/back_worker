@@ -15,8 +15,13 @@ from modules.text_processor import handle_text_datasource
 import time
 from confluent_kafka import Consumer, KafkaException
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# logger = logging.getLogger(__name__)
+
+from logging_config import setup_logging
+
+# Load the logging configuration
+logger = setup_logging(log_file='app.log.jsonl')
 
 load_dotenv(override=True)
 
@@ -100,6 +105,7 @@ def consume_jobs(consumer, topic):
         msg = consumer.poll(2)
 
         if msg is None:
+            logger.info("Pulled Message:", extra={'message': f"{msg}", 'additional_data': 1234})
             print("Pulled Message:",msg)
             continue
         if msg.error():
@@ -115,6 +121,16 @@ def consume_jobs(consumer, topic):
 
 
 if __name__ == "__main__":
+
+    metadata = {
+        'user_id': '12345',
+        'request_id': 'abcde',
+        'operation': 'data_processing'
+    }
+    
+    logger.info("Processing data" , extra={"metadata":metadata} )
+
+    exit()
 
     database_instance.connect()
 
