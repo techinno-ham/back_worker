@@ -8,10 +8,12 @@ from langchain.schema import Document
 from utils import recursive_char_splitter
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+from logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Load the logging configuration
+logger = setup_logging(log_file='app.log.jsonl')
+
+load_dotenv(override=True)
 
 # Initialize S3 client
 s3 = boto3.client('s3', 
@@ -19,10 +21,12 @@ s3 = boto3.client('s3',
                   aws_access_key_id=os.getenv("aws_access_key_id"), 
                   aws_secret_access_key=os.getenv("aws_secret_access_key"))
 
-async def handle_files_from_s3(folder_name):
+async def handle_files_from_s3(folder_name , log_metadata=None):
     """Handle files from S3 and apply chunking. - folder name is equal to data source id"""
 
     bucket_name = 'data-sources'
+
+    logger.info(f"Start handling files from S3 bucket: {bucket_name}, folder: {folder_name}", extra={"metadata": log_metadata})
 
     try:
         # Define file types to process
@@ -36,12 +40,11 @@ async def handle_files_from_s3(folder_name):
         else:
             splited_chunks = []
         
-        logger.info(f"Processed files from bucket: {bucket_name} {folder_name}")
-
+        logger.info(f"Processed files successfully from bucket: {bucket_name}, folder: {folder_name}", extra={"metadata": log_metadata})
         return splited_chunks
     
     except Exception as e:
-        logger.error(f"Error handling files from S3: {e}")
+        logger.error(f"Error handling files from S3: {e}", exc_info=True, extra={"metadata": log_metadata})
         return []
 
 async def download_files_from_s3(bucket_name, folder_name, file_types):

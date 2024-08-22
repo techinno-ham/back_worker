@@ -37,8 +37,13 @@ consumer_conf = {'bootstrap.servers': os.getenv("KAFKA_SERVER"),
 async def aggregate_results(bot_id,datasources):
     tasks = []
 
+    log_metadata = {
+        'bot_id': bot_id,
+        'datasource_id': '1234',
+    }
+
     if 'text' in datasources:
-        tasks.append(handle_text_datasource(datasources['text']))
+        tasks.append(handle_text_datasource(datasources['text'] , log_metadata))
 
     if 'qa' in datasources:
         tasks.append(handle_qa_datasource(datasources['qa']))
@@ -47,7 +52,7 @@ async def aggregate_results(bot_id,datasources):
         tasks.append(handle_urls_datasource(datasources['urls']))
 
     if 'files' in datasources:
-        tasks.append(handle_files_from_s3(datasources['files']))
+        tasks.append(handle_files_from_s3(datasources['files'] , log_metadata))
 
     all_chunks = await asyncio.gather(*tasks)
 
@@ -105,11 +110,10 @@ def consume_jobs(consumer, topic):
         msg = consumer.poll(2)
 
         if msg is None:
-            logger.info("Pulled Message:", extra={'message': f"{msg}", 'additional_data': 1234})
             print("Pulled Message:",msg)
             continue
         if msg.error():
-            print("Consumer error: {}".format(msg.error()))
+            logger.error("Kafks consumer error: %s", msg.error(),exc_info=True)
             continue
         try:
             print("Job revieved:",msg)
@@ -117,20 +121,19 @@ def consume_jobs(consumer, topic):
             asyncio.run(handle_incoming_job_events(msg))
             print("Successfully handled message")
         except Exception as e:
+            logger.error("Error handling kafka job: %s", e , exc_info=True)
             print("Error handling message: %s", e)
 
 
 if __name__ == "__main__":
 
-    metadata = {
-        'user_id': '12345',
-        'request_id': 'abcde',
-        'operation': 'data_processing'
-    }
+    # metadata = {
+    #     'user_id': '12345',
+    #     'request_id': 'abcde',
+    #     'operation': 'data_processing'
+    # }
     
-    logger.info("Processing data" , extra={"metadata":metadata} )
-
-    exit()
+    # logger.info("Processing data" , extra={"metadata":metadata} )
 
     database_instance.connect()
 
