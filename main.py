@@ -69,7 +69,7 @@ async def handle_incoming_job_events(job):
     datasources = msg_obj['datasources']
     bot_id = msg_obj['botId']
     
-    print(f'Received Jon from Kafka for bot : {bot_id}')
+    logger.info("Received Job from kafka for bot : %s" ,bot_id, extra={"metadata": msg_obj})
 
     # Handle different data sources separately
     all_chunks = await aggregate_results(bot_id,datasources)
@@ -91,10 +91,10 @@ def create_kafka_consumer(config):
     while not consumer:
         try:
             consumer = Consumer(config)
-            print("Kafka consumer connection successful")
+            logger.info("Kafka consumer connection successful")
         except KafkaException as e:
-            print(f"Kafka consumer connection failed: {e}")
-            print("Retrying in 5 seconds...")
+            logger.info("Kafka consumer connection failed: %s",e)
+            logger.info("Retrying in 5 seconds...")
             time.sleep(5)
     
     return consumer
@@ -104,7 +104,7 @@ def create_kafka_consumer(config):
 def consume_jobs(consumer, topic):
     consumer.subscribe([topic])
 
-    print("Connected to topic:", topic)
+    logger.info("Connected to topic:%s", topic)
 
     while True:
         msg = consumer.poll(2)
@@ -113,31 +113,21 @@ def consume_jobs(consumer, topic):
             print("Pulled Message:",msg)
             continue
         if msg.error():
-            logger.error("Kafks consumer error: %s", msg.error(),exc_info=True)
+            logger.error("Kafka consumer error: %s", msg.error(),exc_info=True)
             continue
         try:
-            print("Job revieved:",msg)
+            logger.info("Event revieved from kafka",extra={"metadata": msg})
+            
             # Run the async function in a new event loop
             asyncio.run(handle_incoming_job_events(msg))
-            print("Successfully handled message")
+            logger.info("Event handled successfully" ,extra={"metadata": msg})
         except Exception as e:
             logger.error("Error handling kafka job: %s", e , exc_info=True)
-            print("Error handling message: %s", e)
 
 
 if __name__ == "__main__":
 
-    # metadata = {
-    #     'user_id': '12345',
-    #     'request_id': 'abcde',
-    #     'operation': 'data_processing'
-    # }
-    
-    # logger.info("Processing data" , extra={"metadata":metadata} )
-
     database_instance.connect()
-
-    # asyncio.run(handle_incoming_job_events(123))
     
     logger.info("Worker service started !")
     

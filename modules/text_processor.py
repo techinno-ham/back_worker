@@ -1,10 +1,10 @@
 from langchain.docstore.document import Document
 from utils import recursive_char_splitter
 
-from logging_config import setup_logging
+import logging
 
 # Load the logging configuration
-logger = setup_logging(log_file='app.log.jsonl')
+logger = logging.getLogger()
 
 async def handle_text_datasource(text , log_metadata=None):
     logger.info(f"Text processing started" , extra={"metadata":log_metadata})

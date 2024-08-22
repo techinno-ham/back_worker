@@ -8,10 +8,10 @@ from langchain.schema import Document
 from utils import recursive_char_splitter
 from dotenv import load_dotenv
 
-from logging_config import setup_logging
+import logging
 
 # Load the logging configuration
-logger = setup_logging(log_file='app.log.jsonl')
+logger = logging.getLogger()
 
 load_dotenv(override=True)
 

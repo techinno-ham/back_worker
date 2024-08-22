@@ -1,9 +1,9 @@
 from langchain.docstore.document import Document
 
-from logging_config import setup_logging
+import logging
 
 # Load the logging configuration
-logger = setup_logging(log_file='app.log.jsonl')
+logger = logging.getLogger()
 
 async def handle_qa_datasource(qa, log_metadata=None):
     """Handle QA data and create Document objects from questions and answers."""

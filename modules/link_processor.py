@@ -3,10 +3,10 @@ from bs4 import BeautifulSoup as Soup
 from utils import recursive_char_splitter
 from langchain_community.document_loaders.recursive_url_loader import RecursiveUrlLoader
 
-from logging_config import setup_logging
+import logging
 
 # Load the logging configuration
-logger = setup_logging(log_file='app.log.jsonl')
+logger = logging.getLogger()
 
 async def handle_urls_datasource(urls, log_metadata=None):
     """Handle a list of URLs, crawl and extract text from each."""

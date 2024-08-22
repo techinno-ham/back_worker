@@ -20,14 +20,13 @@ logging.Logger.makeRecord = make_record_with_extra
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         extra = getattr(record, '_extra', {})
-        print('Got extra:', extra)
         
         log_record = {
             'timestamp': self.formatTime(record, self.datefmt),
             'level': record.levelname,
             'message': record.getMessage(),
             'name': record.name,
-            'filename': record.pathname,
+            # 'filename': record.pathname,
             'funcName': record.funcName,
             'lineno': record.lineno,
         }
