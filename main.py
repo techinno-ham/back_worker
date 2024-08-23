@@ -155,3 +155,5 @@ if __name__ == "__main__":
     consume_jobs(consumer, os.getenv("KAFKA_TOPIC"))
 
     consumer.close()
+    
+    queue_listener.stop()
