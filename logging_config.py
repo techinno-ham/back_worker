@@ -1,6 +1,7 @@
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, QueueHandler, QueueListener
 import json
+import queue
 
 # Save a reference to the original makeRecord method
 original_makeRecord = logging.Logger.makeRecord
@@ -37,18 +38,27 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log_record)
 
 def setup_logging(log_file='app.log.jsonl', level=logging.INFO):
+    # Create a queue for the QueueHandler
+    log_queue = queue.Queue()
+
+    # Create handlers
+    queue_handler = QueueHandler(log_queue)
     json_handler = RotatingFileHandler(log_file, maxBytes=10000000, backupCount=5)
     json_handler.setFormatter(JsonFormatter())
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(JsonFormatter())
 
+    # Create a QueueListener to listen for records in the queue
+    queue_listener = QueueListener(log_queue, json_handler, console_handler)
+    queue_listener.start()
+
+    # Setup the root logger
     logger = logging.getLogger()
     logger.setLevel(level)
-    logger.addHandler(json_handler)
-    logger.addHandler(console_handler)
+    logger.addHandler(queue_handler)
 
-    return logger
+    return logger, queue_listener
 
 
 

@@ -21,7 +21,7 @@ from confluent_kafka import Consumer, KafkaException
 from logging_config import setup_logging
 
 # Load the logging configuration
-logger = setup_logging(log_file='app.log.jsonl')
+logger, queue_listener = setup_logging()
 
 load_dotenv(override=True)
 

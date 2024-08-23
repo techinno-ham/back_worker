@@ -154,6 +154,15 @@ def consume_jobs(consumer, topic):
 
 
 if __name__ == "__main__":
+    
+    logger, queue_listener = setup_logging()
+    
+    # Example log entries
+    logger.info("This is an info message")
+    logger.error("This is an error message", extra={"user": "example_user"})
+    
+    # Stop the QueueListener when done
+    queue_listener.stop()
 
     asyncio.run(handle_incoming_job_events(123))
     exit()
