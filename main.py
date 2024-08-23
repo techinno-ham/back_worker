@@ -34,12 +34,12 @@ consumer_conf = {'bootstrap.servers': os.getenv("KAFKA_SERVER"),
                  'auto.offset.reset': os.getenv("KAFKA_OFFSET_RESET")}
 
 
-async def aggregate_results(bot_id,datasources):
+async def aggregate_results(bot_id,datasource_id,datasources):
     tasks = []
 
     log_metadata = {
         'bot_id': bot_id,
-        'datasource_id': '1234',
+        'datasource_id': datasource_id,
     }
 
     if 'text' in datasources:
@@ -76,7 +76,7 @@ async def handle_incoming_job_events(job):
         logger.info("Received Job from Kafka for bot: %s", bot_id, extra={"metadata": {**log_metadata,**datasources}})
 
         # Handle different data sources separately
-        all_chunks = await aggregate_results(bot_id, datasources)
+        all_chunks = await aggregate_results(bot_id,datasource_id, datasources)
 
         # Check if all_chunks has any content
         if all_chunks:  # More Pythonic way to check if list is not empty
