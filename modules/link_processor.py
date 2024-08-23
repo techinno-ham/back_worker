@@ -10,7 +10,7 @@ logger = logging.getLogger()
 
 async def handle_urls_datasource(urls, log_metadata=None):
     """Handle a list of URLs, crawl and extract text from each."""
-    logger.info("URL datasource processing started", extra={"metadata": log_metadata})
+    logger.info("LINKS: datasource processing started", extra={"metadata": log_metadata})
 
     try:
         tasks = []
@@ -22,11 +22,11 @@ async def handle_urls_datasource(urls, log_metadata=None):
         # Flatten the list of lists and filter out None results
         all_chunks_flat = [item for sublist in all_chunks if sublist is not None for item in sublist]
 
-        logger.info(f"Successfully processed URLs: {urls}", extra={"metadata": log_metadata})
+        logger.info(f"LINKS: successfully processed: {urls}", extra={"metadata": log_metadata})
         return all_chunks_flat
 
     except Exception as e:
-        logger.error(f"Error processing URLs: {urls}", exc_info=True, extra={"metadata": log_metadata})
+        logger.error(f"LINKS: error processing : {urls}", exc_info=True, extra={"metadata": log_metadata})
         return []
 
 
@@ -48,7 +48,7 @@ async def crawl_and_extract(link, log_metadata=None):
         return chunked_docs
 
     except Exception as e:
-        logger.error(f"Error crawling URL: {link}", exc_info=True, extra={"metadata": log_metadata})
+        logger.error(f"LINKS: error crawling URL: {link}", exc_info=True, extra={"metadata": log_metadata})
         return None
 
 

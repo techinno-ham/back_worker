@@ -8,7 +8,7 @@ logger = logging.getLogger()
 async def handle_qa_datasource(qa, log_metadata=None):
     """Handle QA data and create Document objects from questions and answers."""
 
-    logger.info("QA datasource processing started", extra={"metadata": log_metadata})
+    logger.info("QA: processing started", extra={"metadata": log_metadata})
     documents = []
 
     try:
@@ -19,9 +19,9 @@ async def handle_qa_datasource(qa, log_metadata=None):
             document = Document(page_content=doc_content, metadata={"source": "qa"})
             documents.append(document)
         
-        logger.info("QA datasource processing completed successfully", extra={"metadata": log_metadata})
+        logger.info("QA: processing completed successfully", extra={"metadata": log_metadata})
         return documents
 
     except Exception as e:
-        logger.error("Error processing QA datasource", exc_info=True, extra={"metadata": log_metadata})
+        logger.error("QA: error processing ", exc_info=True, extra={"metadata": log_metadata})
         return []

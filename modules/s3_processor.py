@@ -26,7 +26,7 @@ async def handle_files_from_s3(folder_name , log_metadata=None):
 
     bucket_name = 'data-sources'
 
-    logger.info(f"Start handling files from S3 bucket: {bucket_name}, folder: {folder_name}", extra={"metadata": log_metadata})
+    logger.info(f"S3: start handling files from S3 bucket: {bucket_name}, folder: {folder_name}", extra={"metadata": log_metadata})
 
     try:
         # Define file types to process
@@ -40,11 +40,11 @@ async def handle_files_from_s3(folder_name , log_metadata=None):
         else:
             splited_chunks = []
         
-        logger.info(f"Processed files successfully from bucket: {bucket_name}, folder: {folder_name}", extra={"metadata": log_metadata})
+        logger.info(f"S3: processed files successfully from bucket: {bucket_name}, folder: {folder_name}", extra={"metadata": log_metadata})
         return splited_chunks
     
     except Exception as e:
-        logger.error(f"Error handling files from S3: {e}", exc_info=True, extra={"metadata": log_metadata})
+        logger.error(f"S3: error handling files from S3: {e}", exc_info=True, extra={"metadata": log_metadata})
         return []
 
 async def download_files_from_s3(bucket_name, folder_name, file_types):
@@ -97,5 +97,5 @@ def extract_text_from_pdf(file_obj):
         
         return pdf_text
     except Exception as e:
-        logger.error(f"Error extracting text from PDF: {e}")
+        logger.error(f"S3: error extracting text from PDF: {e}")
         return ""

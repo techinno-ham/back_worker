@@ -46,10 +46,10 @@ async def aggregate_results(bot_id,datasources):
         tasks.append(handle_text_datasource(datasources['text'] , log_metadata))
 
     if 'qa' in datasources:
-        tasks.append(handle_qa_datasource(datasources['qa']))
+        tasks.append(handle_qa_datasource(datasources['qa'] , log_metadata))
 
     if 'urls' in datasources:
-        tasks.append(handle_urls_datasource(datasources['urls']))
+        tasks.append(handle_urls_datasource(datasources['urls'] , log_metadata))
 
     if 'files' in datasources:
         tasks.append(handle_files_from_s3(datasources['files'] , log_metadata))
@@ -62,27 +62,44 @@ async def aggregate_results(bot_id,datasources):
 
 
 async def handle_incoming_job_events(job):
+    try:
+        
+        received_msg = job.value()
+        msg_obj = json.loads(received_msg)
 
-    received_msg = job.value()
-    msg_obj = json.loads(received_msg)
+        bot_id = msg_obj.get('botId', None)
+        datasource_id = msg_obj.get('datasourceId', None)
+        datasources = msg_obj.get('datasources', None)
+        
+        log_metadata = {"bot_id":bot_id,"datasource_id":datasource_id }
 
-    datasources = msg_obj['datasources']
-    bot_id = msg_obj['botId']
-    
-    logger.info("Received Job from kafka for bot : %s" ,bot_id, extra={"metadata": msg_obj})
+        logger.info("Received Job from Kafka for bot: %s", bot_id, extra={"metadata": {**log_metadata,**datasources}})
 
-    # Handle different data sources separately
-    all_chunks = await aggregate_results(bot_id,datasources)
+        # Handle different data sources separately
+        all_chunks = await aggregate_results(bot_id, datasources)
 
-    collection_id = database_instance.create_or_return_collection_uuid(bot_id)
+        # Check if all_chunks has any content
+        if all_chunks:  # More Pythonic way to check if list is not empty
+            collection_id = database_instance.create_or_return_collection_uuid(bot_id)
+            logger.info("Collection ID created: %s", collection_id)
 
-    embedded_chunks = create_document_embedding(all_chunks)
+            embedded_chunks = create_document_embedding(all_chunks)
 
-    database_instance.bulk_insert_embedding_record(bot_id=bot_id,
-                                                   records=all_chunks,
-                                                   embeddings=embedded_chunks,
-                                                   collection_id=collection_id
-                                                   )
+            database_instance.bulk_insert_embedding_record(
+                bot_id=bot_id,
+                records=all_chunks,
+                embeddings=embedded_chunks,
+                collection_id=collection_id
+            )
+            
+            
+
+            logger.info("Successfully processed and stored data for bot: %s s", bot_id  ,extra={"metadata": log_metadata})
+        else:
+            logger.warning("No chunks were generated for bot: %s", bot_id ,extra={"metadata": log_metadata})
+
+    except Exception as e:
+        logger.error("Error handling the job for bot: %s ", bot_id ,extra={"metadata": log_metadata}, exc_info=True)
 
 
 def create_kafka_consumer(config):

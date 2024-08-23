@@ -25,7 +25,7 @@ class JsonFormatter(logging.Formatter):
             'timestamp': self.formatTime(record, self.datefmt),
             'level': record.levelname,
             'message': record.getMessage(),
-            'name': record.name,
+            # 'name': record.name,
             # 'filename': record.pathname,
             'funcName': record.funcName,
             'lineno': record.lineno,
