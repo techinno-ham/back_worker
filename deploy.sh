@@ -1,0 +1,1 @@
+docker run -d --name hamworker -v /var/logs/hamworker:/app/logs 

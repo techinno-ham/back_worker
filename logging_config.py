@@ -2,6 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler, QueueHandler, QueueListener
 import json
 import queue
+import os
 
 # Save a reference to the original makeRecord method
 original_makeRecord = logging.Logger.makeRecord
@@ -37,7 +38,16 @@ class JsonFormatter(logging.Formatter):
             log_record.update(extra)
         return json.dumps(log_record)
 
-def setup_logging(log_file='app.log.jsonl', level=logging.INFO):
+def setup_logging(log_file='logs/app.log.jsonl', level=logging.INFO):
+    
+    log_folder = os.path.dirname(log_file)
+    try:
+        if log_folder:
+            os.makedirs(log_folder, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating log directory '{log_folder}': {e}")
+        raise
+    
     # Create a queue for the QueueHandler
     log_queue = queue.Queue()
 
