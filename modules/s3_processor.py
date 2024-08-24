@@ -17,9 +17,9 @@ load_dotenv(override=True)
 
 # Initialize S3 client
 s3 = boto3.client('s3', 
-                  endpoint_url='http://84.46.250.91:9000',
-                  aws_access_key_id=os.getenv("aws_access_key_id"), 
-                  aws_secret_access_key=os.getenv("aws_secret_access_key"))
+                  endpoint_url=os.getenv('MINIO_HOST'),
+                  aws_access_key_id=os.getenv("MINIO_ACCESS_KEY_ID"), 
+                  aws_secret_access_key=os.getenv("MINIO_SECRET_ACCESS_KEY"))
 
 async def handle_files_from_s3(folder_name , log_metadata=None):
     """Handle files from S3 and apply chunking. - folder name is equal to data source id"""

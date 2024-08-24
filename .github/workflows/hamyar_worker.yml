@@ -22,6 +22,9 @@ jobs:
       KAFKA_GROUP_ID: ${{ secrets.KAFKA_GROUP_ID }}
       KAFKA_SASL_MECH: ${{ secrets.KAFKA_SASL_MECH }}
       KAFKA_OFFSET_RESET: ${{ secrets.KAFKA_OFFSET_RESET }}
+      MINIO_HOST: ${{ secrets.MINIO_HOST }}
+      MINIO_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY_ID }}
+      MINIO_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_ACCESS_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
@@ -64,6 +67,9 @@ jobs:
           KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
           KAFKA_SASL_MECH=${{ secrets.KAFKA_SASL_MECH }}
           KAFKA_OFFSET_RESET=${{ secrets.KAFKA_OFFSET_RESET }}
+          MINIO_HOST=${{ secrets.MINIO_HOST }}
+          MINIO_ACCESS_KEY_ID=${{ secrets.MINIO_ACCESS_KEY_ID }}
+          MINIO_SECRET_ACCESS_KEY=${{ secrets.MINIO_SECRET_ACCESS_KEY }}
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 
     - name: Log out from Docker Hub
