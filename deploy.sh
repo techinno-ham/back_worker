@@ -10,8 +10,8 @@
 # # see volume content
 # docker run --rm -it -v hamworker-logs:/data alpine /bin/sh
 
-docker kill hamworker
+docker kill hamlang
 echo y | docker system prune
-docker pull hamyarchat/worker:latest
-docker run -d --name hamworker -v hamworker-logs:/app/logs --restart unless-stopped  hamyarchat/worker:latest
+docker pull hamyarchat/langchain:latest
+docker run -d --name hamlang -p 8000:8000 --restart unless-stopped  hamyarchat/langchain:latest
 docker ps
