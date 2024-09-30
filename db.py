@@ -55,33 +55,36 @@ class Database:
     def create_or_return_collection_uuid(self, bot_id):
         if not self.connection:
             raise Exception("Database connection is not established.")
-
-        with self.connection.cursor() as cursor:
-            cursor.execute(
-                """
-            SELECT uuid FROM langchain_pg_collection WHERE name = %s;
-            """,
-                (bot_id,)
-            )
-            existing_uuid = cursor.fetchone()
-
-            if existing_uuid:
-                collection_uuid = existing_uuid[0]
-            else:
-                collection_uuid = str(uuid.uuid4())
+        try:
+            with self.connection.cursor() as cursor:
                 cursor.execute(
                     """
-                INSERT INTO langchain_pg_collection (name, cmetadata, uuid)
-                VALUES (%s, %s, %s)
-                RETURNING uuid;
-                """,
+                    DELETE FROM langchain_pg_collection 
+                    WHERE name = %s;
+                    """,
+                    (bot_id,)
+                )
+                
+                collection_uuid = str(uuid.uuid4())
+                
+                cursor.execute(
+                    """
+                    INSERT INTO langchain_pg_collection (name, cmetadata, uuid)
+                    VALUES (%s, %s, %s)
+                    RETURNING uuid;
+                    """,
                     (bot_id, None, collection_uuid)
                 )
+                
                 collection_uuid = cursor.fetchone()[0]
 
-            self.connection.commit()
+                self.connection.commit()
+        except Exception as e:
 
-            return collection_uuid
+            self.connection.rollback()
+
+            raise Exception(f"Error occurred while creating or replacing collection for bot_id {bot_id}") from e
+        return collection_uuid
 
     def insert_embedding_record(self, bot_id, content, metadata, embedding, collection_id):
         """Inserts a new record into the embeddings table."""
