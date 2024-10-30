@@ -6,7 +6,8 @@ from embed import create_document_embedding
 
 def recursive_char_splitter(docs):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
+        # NOTE: 3000 characters is equal to 1000 token in 4o models 
+        chunk_size=3000,
         chunk_overlap=200,
         length_function=len,
         is_separator_regex=False,
