@@ -5,7 +5,10 @@ import os
 from dotenv import load_dotenv
 import time
 from psycopg2 import OperationalError
+from psycopg2 import pool
+import logging
 
+# Load environment variables from .env file
 load_dotenv(override=True)
 
 # Define database connection parameters
@@ -17,176 +20,158 @@ db_params = {
     "port": os.getenv("DB_PORT"),
 }
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Database:
     def __init__(self):
-        self.connection = None
+        self.connection_pool = None
         self.db_params = db_params
+        self.connect()
 
     def connect(self):
-        """Establishes a connection to the database, retrying until successful."""
-        while not self.connection:
-            try:
-                self.connection = psycopg2.connect(**self.db_params)
-                print("Database connection successful")
-            except OperationalError as e:
-                print(f"Database connection failed: {e}")
-                print("Retrying in 5 seconds...")
-                time.sleep(5)
+        """Establishes a connection pool to the database."""
+        try:
+            self.connection_pool = psycopg2.pool.SimpleConnectionPool(
+                minconn=5, maxconn=20, **self.db_params
+            )
+            logger.info("Database connection pool established")
+        except OperationalError as e:
+            logger.error(f"Database connection pool failed: {e}")
+            raise Exception("Could not establish connection pool.")
 
+    def get_connection(self):
+        """Get a connection from the pool."""
+        if not self.connection_pool:
+            self.connect()  # Ensure pool is created if not already
+        return self.connection_pool.getconn()
+
+    def release_connection(self, conn):
+        """Release a connection back to the pool."""
+        if self.connection_pool:
+            self.connection_pool.putconn(conn)
 
     def disconnect(self):
-        """Closes the connection to the database."""
-        if self.connection:
-            self.connection.close()
-            self.connection = None
+        """Close all connections in the pool."""
+        if self.connection_pool:
+            self.connection_pool.closeall()
+            logger.info("Database connection pool closed.")
 
     def execute_query(self, query):
         """Executes an SQL query on the database."""
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query)
+                conn.commit()
+                logger.info(f"Executed query: {query}")
+        except Exception as e:
+            logger.error(f"Error executing query: {e}")
+            conn.rollback()
+        finally:
+            self.release_connection(conn)
 
     def fetch_data(self, query):
         """Fetches data from the database using the provided query."""
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
-            return cursor.fetchall()
-        
-    def return_collection_uuid(self, bot_id):
-        """
-        Fetches and returns the collection UUID for a given bot_id if it exists.
-        """
-        if not self.connection:
-            raise Exception("Database connection is not established.")
+        conn = self.get_connection()
         try:
-            with self.connection.cursor() as cursor:
-                # Check if a collection exists for the given bot_id
-                cursor.execute(
-                    """
-                    SELECT uuid
-                    FROM langchain_pg_collection
-                    WHERE name = %s;
-                    """,
-                    (bot_id,)
-                )
-                
-                result = cursor.fetchone()
-                
-                if result:
-                    # Return the existing collection UUID
-                    return result[0]
-                else:
-                    # If no record exists, raise an exception
-                    raise Exception(f"No collection found for bot_id {bot_id}")
+            with conn.cursor() as cursor:
+                cursor.execute(query)
+                result = cursor.fetchall()
+                logger.info(f"Fetched data: {result}")
+                return result
         except Exception as e:
-            raise Exception(f"Error occurred while retrieving collection for bot_id {bot_id}") from e
+            logger.error(f"Error fetching data: {e}")
+        finally:
+            self.release_connection(conn)
+
+    def return_collection_uuid(self, bot_id):
+        """Fetches and returns the collection UUID for a given bot_id."""
+        query = """
+        SELECT uuid
+        FROM langchain_pg_collection
+        WHERE name = %s;
+        """
+        try:
+            result = self.fetch_data(query, (bot_id,))
+            if result:
+                return result[0][0]
+            else:
+                raise Exception(f"No collection found for bot_id {bot_id}")
+        except Exception as e:
+            logger.error(f"Error retrieving collection for bot_id {bot_id}: {e}")
+            raise e
 
     def create_or_return_collection_uuid(self, bot_id):
-        if not self.connection:
-            raise Exception("Database connection is not established.")
+        """Creates a new collection or returns existing collection UUID."""
+        conn = self.get_connection()
         try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    DELETE FROM langchain_pg_collection 
-                    WHERE name = %s;
-                    """,
-                    (bot_id,)
-                )
-                
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM langchain_pg_collection WHERE name = %s;", (bot_id,))
                 collection_uuid = str(uuid.uuid4())
-                
                 cursor.execute(
-                    """
-                    INSERT INTO langchain_pg_collection (name, cmetadata, uuid)
-                    VALUES (%s, %s, %s)
-                    RETURNING uuid;
-                    """,
+                    "INSERT INTO langchain_pg_collection (name, cmetadata, uuid) VALUES (%s, %s, %s) RETURNING uuid;",
                     (bot_id, None, collection_uuid)
                 )
-                
                 collection_uuid = cursor.fetchone()[0]
-
-                self.connection.commit()
+                conn.commit()
+                logger.info(f"Collection UUID for {bot_id}: {collection_uuid}")
+                return collection_uuid
         except Exception as e:
-
-            self.connection.rollback()
-
-            raise Exception(f"Error occurred while creating or replacing collection for bot_id {bot_id}") from e
-        return collection_uuid
+            logger.error(f"Error creating or returning collection for bot_id {bot_id}: {e}")
+            conn.rollback()
+            raise e
+        finally:
+            self.release_connection(conn)
 
     def insert_embedding_record(self, bot_id, content, metadata, embedding, collection_id):
         """Inserts a new record into the embeddings table."""
-        if not self.connection:
-            raise Exception("Database connection is not established.")
-
-        with self.connection.cursor() as cursor:
-            chunck_uuid = str(uuid.uuid4())
-            #(%s,%s, %s, %s , %s) , (%s,%s, %s, %s , %s)
-            cursor.execute(
-                "INSERT INTO langchain_pg_embedding (collection_id , document , cmetadata , embedding , uuid) VALUES (%s,%s, %s, %s , %s) RETURNING uuid;",
-                (collection_id, content, json.dumps(metadata), embedding, chunck_uuid)
-            )
-            inserted_id = cursor.fetchone()[0]
-            self.connection.commit()
-
-        return inserted_id
-
-    def activate_loading_state(self, bot_id):
-        """Updates status to 'active' in the bots table for a given bot_id."""
-        if not self.connection:
-            raise Exception("Database connection is not established.")
-
-        with self.connection.cursor() as cursor:
-            cursor.execute(
-                "UPDATE bots SET status = 'active' WHERE bot_id = %s;",
-                (bot_id,)
-            )
-        self.connection.commit()
-            
-    def bulk_insert_embedding_record(self, bot_id, records, embeddings, collection_id):
-        """
-        Inserts multiple records into the embeddings table in a single query.
-
-        :param bot_id: The ID of the bot.
-        :param records: A list of tuples where each tuple contains (content, metadata, embedding).
-        :param embeddings: A list of embedded chunks
-        :param collection_id: The ID of the collection to which the records belong.
-        """
-
+        conn = self.get_connection()
         try:
-            if not self.connection:
-                raise Exception("Database connection is not established.")
-
-            # Prepare the data for insertion
-            values_list = []
-            for doc, embedding in zip(records, embeddings):
-                chunk_uuid = str(uuid.uuid4())
-                content = doc.page_content
-                metadata = doc.metadata
-                values_list.append((collection_id, content, json.dumps(metadata), embedding, chunk_uuid))
-
-            with self.connection.cursor() as cursor:
-                # Construct the SQL query dynamically using mogrify
-                args_str = ','.join(cursor.mogrify("(%s, %s, %s, %s, %s)", x).decode('utf-8') for x in values_list)
-                insert_query = (f"INSERT INTO langchain_pg_embedding (collection_id, document, cmetadata, embedding, "
-                                f"uuid) VALUES {args_str} RETURNING uuid;")
-
-                cursor.execute(insert_query)
-                inserted_ids = cursor.fetchall()
-                cursor.execute(
-                    "UPDATE bots SET status = 'active' WHERE bot_id = %s;",
-                    (bot_id,)
-                )
-
-                self.connection.commit()
+            chunk_uuid = str(uuid.uuid4())
+            query = """
+            INSERT INTO langchain_pg_embedding (collection_id, document, cmetadata, embedding, uuid)
+            VALUES (%s, %s, %s, %s, %s) RETURNING uuid;
+            """
+            with conn.cursor() as cursor:
+                cursor.execute(query, (collection_id, content, json.dumps(metadata), embedding, chunk_uuid))
+                inserted_id = cursor.fetchone()[0]
+                conn.commit()
+                logger.info(f"Inserted embedding record with UUID: {inserted_id}")
+                return inserted_id
         except Exception as e:
-            # Rollback the transaction if there's an exception
-            self.connection.rollback()
+            logger.error(f"Error inserting embedding record: {e}")
+            conn.rollback()
             raise e
+        finally:
+            self.release_connection(conn)
 
-        # return [row[0] for row in inserted_ids]
+    def bulk_insert_embedding_record(self, bot_id, records, embeddings, collection_id):
+        """Inserts multiple records into the embeddings table in a single query."""
+        conn = self.get_connection()
+        try:
+            values_list = [
+                (collection_id, doc.page_content, json.dumps(doc.metadata), embedding, str(uuid.uuid4()))
+                for doc, embedding in zip(records, embeddings)
+            ]
 
+            insert_query = """
+            INSERT INTO langchain_pg_embedding (collection_id, document, cmetadata, embedding, uuid)
+            VALUES %s RETURNING uuid;
+            """
+            with conn.cursor() as cursor:
+                psycopg2.extras.execute_values(
+                    cursor, insert_query, values_list, template=None, page_size=100
+                )
+                conn.commit()
+                logger.info(f"Bulk inserted {len(values_list)} embedding records")
+        except Exception as e:
+            logger.error(f"Error bulk inserting embedding records: {e}")
+            conn.rollback()
+            raise e
+        finally:
+            self.release_connection(conn)
 
 # Singleton pattern to ensure only one instance of Database is created
 database_instance = Database()
