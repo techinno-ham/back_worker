@@ -63,7 +63,7 @@ async def handle_qa_job(msg_obj):
 
         # Check if all_chunks has any content
         if all_chunks:  # More Pythonic way to check if list is not empty
-            collection_id = database_instance.return_collection_uuid1(bot_id)
+            collection_id = database_instance.return_collection_uuid(bot_id)
             logger.info("Collection ID created: %s", collection_id)
 
             embedded_chunks = create_document_embedding(all_chunks)
@@ -221,6 +221,8 @@ def consume_jobs(consumer, topic):
             # asyncio.run(handle_incoming_job_events(msg_obj))
             # logger.info("Event handled successfully" ,extra={"metadata": msg})
         except Exception as e:
+            # Activate Bot Even on Error
+            database_instance.activate_loading_state(bot_id)
             logger.error("Error handling kafka job: %s", e , exc_info=True)
 
 

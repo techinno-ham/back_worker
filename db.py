@@ -132,18 +132,18 @@ class Database:
 
         return inserted_id
 
-    def update_loading_state(self, bot_id):
-        """Updates loading_state to false in the bots table for a given bot_id."""
+    def activate_loading_state(self, bot_id):
+        """Updates status to 'active' in the bots table for a given bot_id."""
         if not self.connection:
             raise Exception("Database connection is not established.")
 
         with self.connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE bots SET loading_state = false WHERE bot_id = %s;",
+                "UPDATE bots SET status = 'active' WHERE bot_id = %s;",
                 (bot_id,)
             )
-            self.connection.commit()
-
+        self.connection.commit()
+            
     def bulk_insert_embedding_record(self, bot_id, records, embeddings, collection_id):
         """
         Inserts multiple records into the embeddings table in a single query.
