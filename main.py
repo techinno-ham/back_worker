@@ -231,8 +231,6 @@ if __name__ == "__main__":
     database_instance.connect()
     
     logger.info("Worker service started !")
-    
-    database_instance.connect()
 
     consumer = create_kafka_consumer(consumer_conf)
 

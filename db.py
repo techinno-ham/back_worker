@@ -31,16 +31,20 @@ class Database:
         self.connect()
 
     def connect(self):
-        """Establishes a connection pool to the database."""
-        try:
-            self.connection_pool = psycopg2.pool.SimpleConnectionPool(
-                minconn=5, maxconn=20, **self.db_params
-            )
-            logger.info("Database connection pool established")
-        except OperationalError as e:
-            logger.error(f"Database connection pool failed: {e}")
-            raise Exception("Could not establish connection pool.")
-
+        """Establishes a connection pool to the database, retrying until successful."""
+        while not self.connection_pool:
+            try:
+                # Try to establish the connection pool
+                self.connection_pool = psycopg2.pool.SimpleConnectionPool(
+                    minconn=5, maxconn=20, **self.db_params
+                )
+                logger.info("Database connection pool established")
+            except OperationalError as e:
+                # Log the error and retry after a delay
+                logger.error(f"Database connection pool failed: {e}")
+                logger.info("Retrying in 5 seconds...")
+                time.sleep(5)
+                
     def get_connection(self):
         """Get a connection from the pool."""
         if not self.connection_pool:
