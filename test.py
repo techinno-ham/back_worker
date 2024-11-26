@@ -82,9 +82,13 @@ async def handle_incoming_job_events(job):
         datasource_id = mock_msg_obj.get('datasourceId', None)
         datasources = mock_msg_obj.get('datasources', None)
         
+        # Remove qa log
+        if datasources and 'qa' in datasources:
+            datasources.pop('qa')
+        
         log_metadata = {"bot_id":bot_id,"datasource_id":datasource_id }
 
-        logger.info("Received Job from Kafka for bot: %s", bot_id, extra={"metadata": {**log_metadata,**datasources}})
+        logger.info("Received Job from Kafka for bot: %s", bot_id, extra={"metadata": {**log_metadata,**(datasources or {})}})
 
         # Handle different data sources separately
         all_chunks = await aggregate_results(bot_id, datasources)

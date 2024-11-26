@@ -51,6 +51,35 @@ class Database:
         with self.connection.cursor() as cursor:
             cursor.execute(query)
             return cursor.fetchall()
+        
+    def return_collection_uuid(self, bot_id):
+        """
+        Fetches and returns the collection UUID for a given bot_id if it exists.
+        """
+        if not self.connection:
+            raise Exception("Database connection is not established.")
+        try:
+            with self.connection.cursor() as cursor:
+                # Check if a collection exists for the given bot_id
+                cursor.execute(
+                    """
+                    SELECT uuid
+                    FROM langchain_pg_collection
+                    WHERE name = %s;
+                    """,
+                    (bot_id,)
+                )
+                
+                result = cursor.fetchone()
+                
+                if result:
+                    # Return the existing collection UUID
+                    return result[0]
+                else:
+                    # If no record exists, raise an exception
+                    raise Exception(f"No collection found for bot_id {bot_id}")
+        except Exception as e:
+            raise Exception(f"Error occurred while retrieving collection for bot_id {bot_id}") from e
 
     def create_or_return_collection_uuid(self, bot_id):
         if not self.connection:
