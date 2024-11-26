@@ -127,7 +127,7 @@ def consume_jobs(consumer, topic):
         msg = consumer.poll(2)
 
         if msg is None:
-            print("Pulled Message:",msg)
+            #print("Pulled Message:",msg)
             continue
         if msg.error():
             logger.error("Kafka consumer error: %s", msg.error(),exc_info=True)
