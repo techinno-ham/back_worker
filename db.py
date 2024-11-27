@@ -152,30 +152,58 @@ class Database:
             self.release_connection(conn)
 
     def bulk_insert_embedding_record(self, bot_id, records, embeddings, collection_id):
-        """Inserts multiple records into the embeddings table in a single query."""
+        """
+        Inserts multiple records into the embeddings table in a single query.
+
+        :param bot_id: The ID of the bot.
+        :param records: A list of tuples where each tuple contains (content, metadata, embedding).
+        :param embeddings: A list of embedded chunks.
+        :param collection_id: The ID of the collection to which the records belong.
+        """
         conn = self.get_connection()
         try:
-            values_list = [
-                (collection_id, doc.page_content, json.dumps(doc.metadata), embedding, str(uuid.uuid4()))
-                for doc, embedding in zip(records, embeddings)
-            ]
+            if not conn:
+                raise Exception("Database connection is not established.")
 
-            insert_query = """
-            INSERT INTO langchain_pg_embedding (collection_id, document, cmetadata, embedding, uuid)
-            VALUES %s RETURNING uuid;
-            """
+            # Prepare the data for insertion
+            values_list = []
+            for doc, embedding in zip(records, embeddings):
+                chunk_uuid = str(uuid.uuid4())
+                content = doc.page_content
+                metadata = doc.metadata
+                values_list.append((collection_id, content, json.dumps(metadata), embedding, chunk_uuid))
+
             with conn.cursor() as cursor:
-                psycopg2.extras.execute_values(
-                    cursor, insert_query, values_list, template=None, page_size=100
+                # Construct the SQL query dynamically using mogrify
+                args_str = ','.join(cursor.mogrify("(%s, %s, %s, %s, %s)", x).decode('utf-8') for x in values_list)
+                insert_query = (
+                    f"INSERT INTO langchain_pg_embedding (collection_id, document, cmetadata, embedding, uuid) "
+                    f"VALUES {args_str} RETURNING uuid;"
                 )
+
+                # Execute the query
+                cursor.execute(insert_query)
+                inserted_ids = cursor.fetchall()
+
+                # Update the bot status
+                cursor.execute(
+                    "UPDATE bots SET status = 'active' WHERE bot_id = %s;",
+                    (bot_id,)
+                )
+
+                # Commit the transaction
                 conn.commit()
-                logger.info(f"Bulk inserted {len(values_list)} embedding records")
+                logger.info(f"Bulk inserted {len(values_list)} embedding records.")
+                return [row[0] for row in inserted_ids]
+
         except Exception as e:
+            # Rollback the transaction if there's an exception
             logger.error(f"Error bulk inserting embedding records: {e}")
             conn.rollback()
             raise e
-        finally:
-            self.release_connection(conn)
 
+        finally:
+            # Release the connection back to the pool
+            self.release_connection(conn)
 # Singleton pattern to ensure only one instance of Database is created
 database_instance = Database()
