@@ -59,6 +59,8 @@ async def handle_qa_job(msg_obj):
         datasource_id = msg_obj.get('datasourceId', None)
         datasources = msg_obj.get('datasources', None)
         
+        log_metadata = {"bot_id":bot_id,"datasource_id":datasource_id }
+        
         all_chunks = await handle_qa_update(bot_id,datasource_id, datasources)
 
         # Check if all_chunks has any content
@@ -83,6 +85,7 @@ async def handle_qa_job(msg_obj):
 
     except Exception as e:
         logger.error("Error handling the job for bot: %s ", bot_id ,extra={"metadata": log_metadata}, exc_info=True)
+        raise e
 
 
 async def aggregate_results(bot_id,datasource_id,datasources):
@@ -152,6 +155,7 @@ async def handle_incoming_job_events(msg_obj):
 
     except Exception as e:
         logger.error("Error handling the job for bot: %s ", bot_id ,extra={"metadata": log_metadata}, exc_info=True)
+        raise e
 
 
 def create_kafka_consumer(config):
