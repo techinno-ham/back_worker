@@ -174,8 +174,19 @@ class Database:
                 values_list.append((collection_id, content, json.dumps(metadata), embedding, chunk_uuid))
 
             with conn.cursor() as cursor:
+                
+                #Sanitize for remving NUL character
+                sanitized_values_list = [
+                    tuple(v.replace('\x00', '') if isinstance(v, str) else v for v in row)
+                    for row in values_list
+                ]
+                
                 # Construct the SQL query dynamically using mogrify
-                args_str = ','.join(cursor.mogrify("(%s, %s, %s, %s, %s)", x).decode('utf-8') for x in values_list)
+                args_str = ','.join(
+                    cursor.mogrify("(%s, %s, %s, %s, %s)", row).decode('utf-8')
+                    for row in sanitized_values_list
+                )
+                
                 insert_query = (
                     f"INSERT INTO langchain_pg_embedding (collection_id, document, cmetadata, embedding, uuid) "
                     f"VALUES {args_str} RETURNING uuid;"
