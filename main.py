@@ -185,8 +185,15 @@ def consume_jobs(channel, queue):
     
     def callback(ch, method, properties, body):
         try:
-            received_msg = body.decode('utf-8')
-            msg_for_log = json.loads(received_msg)
+            # received_msg = body.decode('utf-8')
+            # msg_for_log = json.loads(received_msg)
+            
+            original_message = body.decode('utf-8')
+            original_message_json = json.loads(original_message)  # Parse the JSON
+
+
+            received_msg = original_message_json["data"]
+            msg_for_log = original_message_json["data"]
 
             if "datasources" in msg_for_log and "qa" in msg_for_log["datasources"]:
                 del msg_for_log["datasources"]["qa"]
@@ -195,10 +202,10 @@ def consume_jobs(channel, queue):
             logger.info("Event received from RabbitMQ", extra={"metadata": str(msg_for_log)})
 
             # Extract information from the message
-            event_type = msg_for_log.get('event_type', None)
-            bot_id = msg_for_log.get('botId', None)
-            datasource_id = msg_for_log.get('datasourceId', None)
-            datasources = msg_for_log.get('datasources', None)
+            event_type = received_msg.get('event_type', None)
+            bot_id = received_msg.get('botId', None)
+            datasource_id = received_msg.get('datasourceId', None)
+            datasources = received_msg.get('datasources', None)
             
             if bot_id is None or datasource_id is None or datasources is None:
                 logger.warning("Skipping job due to malformed data")
@@ -207,11 +214,11 @@ def consume_jobs(channel, queue):
             elif event_type in {"update", "create"}:
                 logger.info("Processing 'update' or 'create' event: botId=%s, datasourceId=%s, event_type=%s",
                             bot_id, datasource_id, event_type)
-                asyncio.run(handle_incoming_job_events(msg_for_log))
+                asyncio.run(handle_incoming_job_events(received_msg))
 
             elif event_type == "qa_update":
                 logger.info("Processing 'qa_update' event: botId=%s, datasourceId=%s", bot_id, datasource_id)
-                asyncio.run(handle_incoming_job_events(msg_for_log))
+                asyncio.run(handle_incoming_job_events(received_msg))
 
         except Exception as e:
             # Activate Bot Even on Error
