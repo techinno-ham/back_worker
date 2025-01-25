@@ -11,7 +11,6 @@ from modules.qa_processor import handle_qa_datasource
 from modules.s3_processor import handle_files_from_s3
 from modules.link_processor import handle_urls_datasource
 from modules.text_processor import handle_text_datasource
-import pika
 
 import time
 from confluent_kafka import Consumer, KafkaException
@@ -26,13 +25,14 @@ logger, queue_listener = setup_logging()
 
 load_dotenv(override=True)
 
-rabbitmq_conf = {
-    'host': os.getenv("RABBITMQ_HOST"),
-    'queue': os.getenv("RABBITMQ_QUEUE"),
-    'username': os.getenv("RABBITMQ_USERNAME"),
-    'password': os.getenv("RABBITMQ_PASSWORD"),
-    'virtual_host': os.getenv("RABBITMQ_VHOST")
-}
+consumer_conf = {'bootstrap.servers': os.getenv("KAFKA_SERVER"),
+                 'security.protocol': 'SASL_SSL',
+                 'sasl.mechanism': os.getenv('KAFKA_SASL_MECH'),
+                 'sasl.username': os.getenv("KAFKA_USERNAME"),
+                 'sasl.password': os.getenv("KAFKA_PASS"),
+                 'group.id': os.getenv("KAFKA_GROUP_ID"),
+                 'auto.offset.reset': os.getenv("KAFKA_OFFSET_RESET")}
+
 
 async def handle_qa_update(bot_id,datasource_id,datasources):
     tasks = []
@@ -158,90 +158,88 @@ async def handle_incoming_job_events(msg_obj):
         raise e
 
 
-def create_rabbitmq_connection(config):
-    """Creates a RabbitMQ connection with retry logic until successful."""
-    connection = None
-    while not connection:
+def create_kafka_consumer(config):
+    """Creates a Kafka consumer with retry logic until successful."""
+    consumer = None
+    while not consumer:
         try:
-            # Setup RabbitMQ connection
-            credentials = pika.PlainCredentials(config['username'], config['password'])
-            parameters = pika.ConnectionParameters(
-                host=config['host'],
-                virtual_host=config['virtual_host'],
-                credentials=credentials
-            )
-            connection = pika.BlockingConnection(parameters)
-            logger.info("RabbitMQ connection successful")
-        except Exception as e:
-            logger.error("RabbitMQ connection failed: %s", e)
+            consumer = Consumer(config)
+            logger.info("Kafka consumer connection successful")
+        except KafkaException as e:
+            logger.info("Kafka consumer connection failed: %s",e)
             logger.info("Retrying in 5 seconds...")
             time.sleep(5)
     
-    return connection
+    return consumer
 
-def consume_jobs(channel, queue):
-    """Consumes messages from RabbitMQ queue."""
-    logger.info("Connected to RabbitMQ queue: %s", queue)
-    
-    def callback(ch, method, properties, body):
+
+
+def consume_jobs(consumer, topic):
+    consumer.subscribe([topic])
+
+    logger.info("Connected to topic:%s", topic)
+
+    while True:
+        msg = consumer.poll(0.5)
+
+        if msg is None:
+            #print("Pulled Message:",msg)
+            continue
+        if msg.error():
+            logger.error("Kafka consumer error: %s", msg.error(),exc_info=True)
+            continue
         try:
-            received_msg = body.decode('utf-8')
-            msg_for_log = json.loads(received_msg)
-
+            received_msg = msg.value()
+            
+            msg_for_log = json.loads(received_msg)           
             if "datasources" in msg_for_log and "qa" in msg_for_log["datasources"]:
+                #del msg_for_log["datasources"]["text"]
                 del msg_for_log["datasources"]["qa"]
-
-            logger.info("Received Message As Object: %s", msg_for_log)
-            logger.info("Event received from RabbitMQ", extra={"metadata": str(msg_for_log)})
-
-            # Extract information from the message
-            event_type = msg_for_log.get('event_type', None)
-            bot_id = msg_for_log.get('botId', None)
-            datasource_id = msg_for_log.get('datasourceId', None)
-            datasources = msg_for_log.get('datasources', None)
+                
+            print("Recieved Message As Object:" , msg_for_log)
+            
+            logger.info("Event revieved from kafka",extra={"metadata": str(msg_for_log)})
+            
+            msg_obj = json.loads(received_msg)
+            
+            
+            event_type = msg_obj.get('event_type', None)
+            bot_id = msg_obj.get('botId', None)
+            datasource_id = msg_obj.get('datasourceId', None)
+            datasources = msg_obj.get('datasources', None)
             
             if bot_id is None or datasource_id is None or datasources is None:
-                logger.warning("Skipping job due to malformed data")
-                return  # Exit the callback early
+                logger.warning("Skipping job due to Malform data" )
+                continue  # Exit the function early
             
             elif event_type in {"update", "create"}:
                 logger.info("Processing 'update' or 'create' event: botId=%s, datasourceId=%s, event_type=%s",
-                            bot_id, datasource_id, event_type)
-                asyncio.run(handle_incoming_job_events(msg_for_log))
+                bot_id, datasource_id, event_type)
+                asyncio.run(handle_incoming_job_events(msg_obj))
 
             elif event_type == "qa_update":
                 logger.info("Processing 'qa_update' event: botId=%s, datasourceId=%s", bot_id, datasource_id)
-                asyncio.run(handle_incoming_job_events(msg_for_log))
+                asyncio.run(handle_incoming_job_events(msg_obj))
 
+            # Run the async function in a new event loop
+            # asyncio.run(handle_incoming_job_events(msg_obj))
+            # logger.info("Event handled successfully" ,extra={"metadata": msg})
         except Exception as e:
             # Activate Bot Even on Error
-            if bot_id:
-                database_instance.activate_loading_state(bot_id)
-            logger.error("Error handling RabbitMQ job: %s", e, exc_info=True)
+            database_instance.activate_loading_state(bot_id)
+            logger.error("Error handling kafka job: %s", e , exc_info=True)
 
-    # Start consuming messages from RabbitMQ
-    channel.basic_consume(queue=queue, on_message_callback=callback, auto_ack=True)
-    logger.info("Started consuming messages from RabbitMQ")
-    channel.start_consuming()
 
 if __name__ == "__main__":
 
-    # Connect to the database (assumed)
     database_instance.connect()
+    
+    logger.info("Worker service started !")
 
-    # Log worker start message
-    logger.info("Worker service started!")
+    consumer = create_kafka_consumer(consumer_conf)
 
-    # Create RabbitMQ connection and channel
-    connection = create_rabbitmq_connection(rabbitmq_conf)
-    channel = connection.channel()
+    consume_jobs(consumer, os.getenv("KAFKA_TOPIC"))
 
-    # Declare the queue (make sure the queue exists)
-    channel.queue_declare(queue=rabbitmq_conf['queue'], durable=True)
-
-    # Start consuming messages from the queue
-    consume_jobs(channel, rabbitmq_conf['queue'])
-
-    # Close the connection (This will never be reached due to `start_consuming` blocking)
-    connection.close()
+    consumer.close()
+    
     queue_listener.stop()
