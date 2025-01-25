@@ -26,6 +26,11 @@ jobs:
       MINIO_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY_ID }}
       MINIO_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_ACCESS_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      RABBITMQ_HOST: ${{ secrets.RABBITMQ_HOST}}
+      RABBITMQ_QUEUE: ${{ secrets.RABBITMQ_QUEUE}}
+      RABBITMQ_USERNAME: ${{ secrets.RABBITMQ_USERNAME}}
+      RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD}}
+      RABBITMQ_VHOST: ${{ secrets.RABBITMQ_VHOST}}
 
     steps:
     - name: Checkout code
@@ -71,6 +76,11 @@ jobs:
           MINIO_ACCESS_KEY_ID=${{ secrets.MINIO_ACCESS_KEY_ID }}
           MINIO_SECRET_ACCESS_KEY=${{ secrets.MINIO_SECRET_ACCESS_KEY }}
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST}}
+          RABBITMQ_QUEUE=${{ secrets.RABBITMQ_QUEUE}}
+          RABBITMQ_USERNAME=${{ secrets.RABBITMQ_USERNAME}}
+          RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD}}
+          RABBITMQ_VHOST=${{ secrets.RABBITMQ_VHOST}}
 
     - name: Log out from Docker Hub
       run: docker logout
